@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CompetitorAnalysis</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --ink: #1a1a1a;
+    --muted: #666;
+    --border: #ddd;
+    --bg: #fff;
+    --accent: #2f5fce;
+    --tint: #eef2fc;
+    --chip-bg: #eee;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #eee; --muted: #999; --border: #333; --bg: #121212; --tint: #1b2333; --chip-bg: #262626; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 820px; margin: 0 auto; padding: 40px 20px 80px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.subtitle { color: var(--muted); margin: 0 0 28px; }
+  form { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field { flex: 1; min-width: 180px; }
+  input {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+  }
+  button {
+    align-self: flex-end;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .6; cursor: default; }
+  #status { color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+  #error { color: #c0392b; font-size: 14px; margin: 8px 0 0; display: none; }
+  #results { display: none; margin-top: 24px; }
+  .banner {
+    background: var(--tint);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .banner.warn {
+    background: #fdf1ea;
+    border-color: #e0a97a;
+    color: #8a4b1c;
+  }
+  @media (prefers-color-scheme: dark) {
+    .banner.warn { background: #2e2013; border-color: #7a4a1c; color: #e8b184; }
+  }
+  #summary { font-size: 15px; margin: 0 0 16px; }
+  .meta { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 12.5px; text-transform: uppercase; }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+  .platform-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--chip-bg);
+    font-size: 11.5px;
+    text-transform: capitalize;
+  }
+  .cell-note { font-size: 11.5px; color: var(--muted); }
+  .name-cell { display: flex; gap: 8px; align-items: flex-start; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex: none; background: var(--chip-bg); }
+  .cell-desc { font-size: 12px; color: var(--muted); margin-top: 2px; max-width: 280px; }
+  .empty-row td { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+<main>
+  <h1>CompetitorAnalysis</h1>
+  <p class="subtitle">Who's selling this product on Google, Instagram, Facebook, and Amazon — and how do they rate?</p>
+
+  <form id="analyze-form">
+    <div class="field">
+      <label for="product">Product</label>
+      <input id="product" name="product" placeholder="stainless steel water bottle" required>
+    </div>
+    <div class="field">
+      <label for="region">Region</label>
+      <input id="region" name="region" placeholder="United Kingdom" required>
+    </div>
+    <button type="submit" id="submit-btn">Search</button>
+  </form>
+
+  <p id="status"></p>
+  <p id="error"></p>
+
+  <section id="results">
+    <div class="banner warn" id="blocked-banner" hidden></div>
+    <div class="banner" id="mock-banner" hidden>
+      Showing sample data — USE_MOCK_DATA=true is set in .env.
+    </div>
+    <div class="banner" id="live-banner" hidden>
+      Google ratings come from the official Places API; Facebook pages (picture, category, summary,
+      followers) come from Meta's Graph API when META_ACCESS_TOKEN is set, otherwise from
+      Google Custom Search when it's configured. Instagram, Facebook, and Amazon
+      are read from their public pages, which they restrict for logged-out automated
+      requests, so results can be partial. Instagram has no public rating system at all
+      (followers are shown there instead). Website/# products/price range come from a
+      best-effort read of each company's own site (Shopify stores are reliable; most
+      others are a rough estimate) — a dash means no website was found or it couldn't
+      be read. Every rating is each listing's current total, not a year-by-year history
+      — none of these platforms publish that.
+    </div>
+    <p id="summary"></p>
+    <p class="meta" id="meta"></p>
+    <div class="table-scroll">
+      <table id="listing-table">
+        <thead>
+          <tr>
+            <th>Platform</th><th>Company / Name</th><th>Rating</th><th># of ratings</th>
+            <th>Followers</th><th>Website</th><th># Products</th><th>Price range</th>
+          </tr>
+        </thead>
+        <tbody id="listing-rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const form = document.getElementById('analyze-form');
+const statusEl = document.getElementById('status');
+const errorEl = document.getElementById('error');
+const resultsEl = document.getElementById('results');
+const submitBtn = document.getElementById('submit-btn');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const product = document.getElementById('product').value.trim();
+  const region = document.getElementById('region').value.trim();
+  if (!product || !region) return;
+
+  submitBtn.disabled = true;
+  statusEl.textContent = 'Searching Google, Instagram, Facebook, and Amazon…';
+  errorEl.style.display = 'none';
+  resultsEl.style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ product, region }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || 'Something went wrong.');
+    render(data);
+    statusEl.textContent = '';
+  } catch (err) {
+    statusEl.textContent = '';
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+
+function render(data) {
+  const isMock = data.data_source === 'mock_sample_data';
+  const blocked = data.platforms_blocked || [];
+
+  const blockedBanner = document.getElementById('blocked-banner');
+  blockedBanner.hidden = blocked.length === 0;
+  if (blocked.length) {
+    blockedBanner.textContent =
+      `Blocked by: ${blocked.join(', ')} — those platforms refused the automated query. ` +
+      `This is NOT the same as "no competitors found" there.`;
+  }
+  document.getElementById('mock-banner').hidden = !isMock;
+  document.getElementById('live-banner').hidden = isMock;
+
+  document.getElementById('summary').textContent = data.summary;
+
+  const cacheNote = data.cached ? ' · cached result' : '';
+  document.getElementById('meta').textContent =
+    `Search terms used: ${data.search_terms_used.join(', ')}${cacheNote}`;
+
+  const rows = document.getElementById('listing-rows');
+  rows.innerHTML = '';
+
+  if (!data.listings.length) {
+    const tr = document.createElement('tr');
+    tr.className = 'empty-row';
+    tr.innerHTML = `<td colspan="8">No listings found.</td>`;
+    rows.appendChild(tr);
+  }
+
+  for (const item of data.listings) {
+    const tr = document.createElement('tr');
+    const nameCell = item.url
+      ? `<a href="${item.url}" target="_blank" rel="noopener">${item.name}</a>`
+      : item.name;
+    const noteHtml = item.note ? `<div class="cell-note">${item.note}</div>` : '';
+    const descHtml = item.description ? `<div class="cell-desc">${esc(item.description)}</div>` : '';
+    const avatarHtml = item.profile_image
+      ? `<img class="avatar" src="${esc(item.profile_image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">`
+      : '';
+
+    let websiteCell = '—';
+    if (item.website) {
+      let host = item.website;
+      try { host = new URL(item.website).hostname.replace(/^www\./, ''); } catch (e) {}
+      websiteCell = `<a href="${item.website}" target="_blank" rel="noopener">${host}</a>`;
+    }
+    const catalogNoteHtml = item.catalog_note ? `<div class="cell-note">${item.catalog_note}</div>` : '';
+
+    let priceRangeCell = '—';
+    if (item.price_min != null && item.price_max != null) {
+      priceRangeCell = item.price_min === item.price_max
+        ? item.price_min.toFixed(2)
+        : `${item.price_min.toFixed(2)} – ${item.price_max.toFixed(2)}`;
+    }
+
+    tr.innerHTML = `
+      <td><span class="platform-chip">${item.platform}</span></td>
+      <td><div class="name-cell">${avatarHtml}<div>${nameCell}${descHtml}${noteHtml}</div></div></td>
+      <td>${item.rating != null ? item.rating.toFixed(1) + ' / 5' : '—'}</td>
+      <td>${item.rating_count != null ? item.rating_count.toLocaleString() : '—'}</td>
+      <td>${item.followers != null ? item.followers.toLocaleString() : '—'}</td>
+      <td>${websiteCell}${catalogNoteHtml}</td>
+      <td>${item.product_count != null ? item.product_count.toLocaleString() : '—'}</td>
+      <td>${priceRangeCell}</td>
+    `;
+    rows.appendChild(tr);
+  }
+
+  resultsEl.style.display = 'block';
+}
+</script>
+</body>
+</html>
