@@ -24,11 +24,28 @@ AMAZON_DOMAINS = {
     "germany": "amazon.de",
     "france": "amazon.fr",
     "japan": "amazon.co.jp",
+    "singapore": "amazon.sg",
+    "united arab emirates": "amazon.ae",
+    "saudi arabia": "amazon.sa",
+    "egypt": "amazon.eg",
+    "turkey": "amazon.com.tr",
+    "italy": "amazon.it",
+    "spain": "amazon.es",
+    "netherlands": "amazon.nl",
+    "belgium": "amazon.com.be",
+    "sweden": "amazon.se",
+    "poland": "amazon.pl",
+    "ireland": "amazon.ie",
+    "mexico": "amazon.com.mx",
+    "brazil": "amazon.com.br",
 }
 
-TITLE_RE = re.compile(r'<span[^>]*class="[^"]*a-size-(?:medium|base-plus)[^"]*"[^>]*>([^<]{3,150})</span>')
+# Title text sits in a sized <span> (older markup) or in a sized <h2>'s inner <span> (current markup)
+TITLE_RE = re.compile(
+    r'<(?:span|h2)[^>]*class="[^"]*a-size-(?:medium|base-plus)[^"]*"[^>]*>\s*(?:<span[^>]*>)?([^<]{3,150})</'
+)
 RATING_RE = re.compile(r"([\d.]+) out of 5 stars")
-COUNT_RE = re.compile(r'aria-label="([\d,]+)"[^>]*class="[^"]*s-underline-text')
+COUNT_RE = re.compile(r'aria-label="([\d,]+)(?: ratings?)?"[^>]*class="[^"]*s-underline-text')
 
 
 def _amazon_domain(region: str) -> str:

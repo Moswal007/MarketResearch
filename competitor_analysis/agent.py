@@ -30,7 +30,8 @@ class CompetitorAnalysisAgent:
     async def run(self, request: AnalyzeRequest) -> AnalyzeResult:
         key = cache.make_key(request.product, request.region)
         cached = cache.get(key)
-        if cached:
+        # Never serve sample data as live results (or vice versa) - both modes share one cache dir
+        if cached and cached.get("data_source") == self.data_source:
             cached["cached"] = True
             return AnalyzeResult(**cached)
 
@@ -72,6 +73,7 @@ class CompetitorAnalysisAgent:
             cached=False,
             generated_at=datetime.now(timezone.utc).isoformat(),
         )
-        if not (unique_count == 0 and platforms_blocked):
-            cache.set(key, result.model_dump())  # don't cache a total wipeout - it should retry next time
+        # Don't cache sample data, or a total wipeout - it should retry next time
+        if not USE_MOCK_DATA and not (unique_count == 0 and platforms_blocked):
+            cache.set(key, result.model_dump())
         return result

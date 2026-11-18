@@ -33,7 +33,10 @@ def _check(resp: httpx.Response) -> dict:
     if error:
         code = error.get("code")
         message = f"Meta Graph API error {code}: {error.get('message', '')[:200]}"
-        if code in AUTH_ERROR_CODES or code in RATE_LIMIT_ERROR_CODES or resp.status_code in (401, 403, 429):
+        # Code 100 is usually a bad parameter, but "Authorization Error" means the app
+        # isn't approved for Page Public Metadata Access yet
+        not_approved = code == 100 and "authoriz" in error.get("message", "").lower()
+        if code in AUTH_ERROR_CODES or code in RATE_LIMIT_ERROR_CODES or not_approved or resp.status_code in (401, 403, 429):
             raise SearchBlocked(message)
         raise RuntimeError(message)
     resp.raise_for_status()
