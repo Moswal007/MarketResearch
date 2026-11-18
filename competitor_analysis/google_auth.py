@@ -5,6 +5,8 @@ OAuth2 token via the cloud-platform scope - the path used here, since a service
 account is what's actually available.
 """
 
+import json
+
 from google.auth.exceptions import DefaultCredentialsError, RefreshError
 from google.auth.transport.requests import Request
 from google.oauth2 import service_account
@@ -24,6 +26,14 @@ class GoogleAuthError(Exception):
 def _load_credentials() -> service_account.Credentials:
     global _credentials
     if _credentials is not None:
+        return _credentials
+    if config.GOOGLE_SERVICE_ACCOUNT_JSON:
+        try:
+            _credentials = service_account.Credentials.from_service_account_info(
+                json.loads(config.GOOGLE_SERVICE_ACCOUNT_JSON), scopes=_SCOPES
+            )
+        except (ValueError, DefaultCredentialsError) as e:
+            raise GoogleAuthError(f"GOOGLE_SERVICE_ACCOUNT_JSON is invalid: {e}")
         return _credentials
     if not config.GOOGLE_SERVICE_ACCOUNT_FILE:
         raise GoogleAuthError("GOOGLE_SERVICE_ACCOUNT_FILE is not set in .env")

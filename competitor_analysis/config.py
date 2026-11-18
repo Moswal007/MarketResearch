@@ -18,6 +18,9 @@ USE_MOCK_DATA = os.getenv("USE_MOCK_DATA", "false").strip().lower() == "true"
 # data). Leave unset to fall back to a best-effort, frequently-blocked scrape
 # of google.com/search instead.
 GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip()
+# The same key's JSON contents, for hosts with no file to point at (e.g. Vercel,
+# where it's pasted into an environment variable). Used instead of the file when set.
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
 
 # Google Custom Search JSON API key + Programmable Search Engine ID (cx). When
 # both are set, Facebook Pages are found through Google's index - with each
@@ -34,4 +37,5 @@ META_ACCESS_TOKEN = os.getenv("META_ACCESS_TOKEN", "").strip()
 META_GRAPH_VERSION = os.getenv("META_GRAPH_VERSION", "v23.0").strip()
 
 CACHE_TTL_HOURS = float(os.getenv("CACHE_TTL_HOURS", "24"))
-CACHE_DIR = PROJECT_ROOT / ".cache" / "competitor_analysis"
+# Vercel's filesystem is read-only apart from /tmp (which is per-instance and short-lived)
+CACHE_DIR = Path("/tmp/competitor_analysis") if os.getenv("VERCEL") else PROJECT_ROOT / ".cache" / "competitor_analysis"

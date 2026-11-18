@@ -22,7 +22,7 @@ def get_sources(use_mock: bool) -> dict[str, PlatformSource]:
         return {name: MockSource(name) for name in PLATFORM_CLASSES}
 
     sources = {name: cls() for name, cls in PLATFORM_CLASSES.items()}
-    if config.GOOGLE_SERVICE_ACCOUNT_FILE:
+    if config.GOOGLE_SERVICE_ACCOUNT_FILE or config.GOOGLE_SERVICE_ACCOUNT_JSON:
         sources["google"] = GooglePlacesSource()  # official API over the fragile scrape, when configured
     if config.GOOGLE_CSE_API_KEY and config.GOOGLE_CSE_ID:
         sources["facebook"] = FacebookCSESource()  # Google's index of Facebook over the blocked direct scrape
