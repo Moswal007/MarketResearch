@@ -1,0 +1,16 @@
+[project]
+name = "market-research"
+version = "0.1.0"
+requires-python = ">=3.12"
+# Keep in sync with requirements.txt
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "httpx",
+    "python-dotenv",
+    "pydantic",
+    "google-auth",
+]
+
+[tool.vercel]
+entrypoint = "competitor_analysis.main:app"
