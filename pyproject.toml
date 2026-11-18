@@ -9,7 +9,7 @@ dependencies = [
     "httpx",
     "python-dotenv",
     "pydantic",
-    "google-auth",
+    "google-auth[requests]",  # transport used by google_auth.py
 ]
 
 [tool.vercel]

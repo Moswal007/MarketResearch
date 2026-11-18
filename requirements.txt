@@ -3,4 +3,4 @@ uvicorn[standard]
 httpx
 python-dotenv
 pydantic
-google-auth
+google-auth[requests]
